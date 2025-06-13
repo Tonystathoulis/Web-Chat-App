@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+    <style>
+        #messages {   /*STRUCTURE OF THE WEB CHAT INTERFACE*/
+            list-style-type: none;
+            padding: 0;
+        }
+        #message-box {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+        }
+        #message-list {
+            flex-grow: 1;
+            overflow-y: auto;
+           
+        }
+        #message-input {
+            display: flex;
+        }
+        #username, #key, #message {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="msgbox">
+        <ul id="messages"></ul>
+        <div id="msginput">
+            <input id="username" type="text" placeholder="Choose username"> <!--TEXT TO HELP USERS UNDERSTAND WHAT EACH INPUT BOX IS-->
+            <input id="key" type="text" placeholder="Enter security key">
+            <input id="message" type="text" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io('http://127.0.0.1:5000');
+
+        function sendMessage() {
+            const username = document.getElementById('username').value;
+            const key = document.getElementById('key').value;  
+            const message = document.getElementById('message').value;
+
+            if (username.trim() === '' || key.trim() === '' || message.trim() === '') {   //IF USERS DONT TYPE ANYTHING IN EACH INPUT BOX
+                console.error("Username, key or message cannot be empty");
+                return; 
+            }
+
+            socket.emit('join', { 'username': username, 'key': key });  //HANDLES EACH USER THAT JOINS THE CHAT
+
+            socket.emit('chat_message', { 'username': username, 'message': message });  //CHAT MESSAGES APPEAR ON THE SERVER
+            appendMessage(`${username}: ${message}`);         
+            document.getElementById('message').value = ''; //SENT MESSAGES DISAPPEAR FROM THE INPUT BOX SO USERS CAN SEND NEW ONES
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function appendMessage(message) {    //HOW CHAT MESSAGES WILL APPEAR
+            const messageList = document.getElementById('messages');
+            const listItem = document.createElement('li');
+            listItem.textContent = message;
+            messageList.appendChild(listItem);
+        }
+
+        socket.on('chat_message', function (data) {
+            appendMessage(`${data.username}: ${data.message}`);  
+        });
+    </script>
+</body>
+</html>
